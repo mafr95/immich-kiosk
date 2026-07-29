@@ -299,9 +299,15 @@ func propertyValue(vevent *ics.VEvent, prop ics.ComponentProperty) string {
 	return p.Value
 }
 
-// UpcomingEvents returns the merged, sorted list of not-yet-ended events across
-// all configured calendars, capped at maxEvents (0 or negative means unlimited).
-func UpcomingEvents(maxEvents int) []Event {
+// timedEventLeadTime is how long before a timed event's start it becomes visible.
+const timedEventLeadTime = 30 * time.Minute
+
+// CurrentEvents returns the merged, sorted list of currently relevant events
+// across all configured calendars, capped at maxEvents (0 or negative means
+// unlimited). An all-day event is relevant for its entire day; a timed event
+// becomes relevant timedEventLeadTime before it starts and stops being
+// relevant once it ends.
+func CurrentEvents(maxEvents int) []Event {
 	now := time.Now()
 
 	var all []Event
@@ -311,7 +317,11 @@ func UpcomingEvents(maxEvents int) []Event {
 			return true
 		}
 		for _, e := range events {
-			if e.End.Before(now) {
+			visibleFrom := e.Start
+			if !e.AllDay {
+				visibleFrom = e.Start.Add(-timedEventLeadTime)
+			}
+			if now.Before(visibleFrom) || !now.Before(e.End) {
 				continue
 			}
 			all = append(all, e)

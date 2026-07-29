@@ -185,27 +185,52 @@ func TestExpandEvents_AllDayEvent(t *testing.T) {
 	}
 }
 
-func TestUpcomingEvents_MergesSortsAndCaps(t *testing.T) {
+func TestCurrentEvents_FiltersToRelevantWindow(t *testing.T) {
 	now := time.Now()
 
-	past := Event{CalendarName: "a", Summary: "Already ended", Start: now.Add(-2 * time.Hour), End: now.Add(-time.Hour)}
-	soon := Event{CalendarName: "a", Summary: "Starting soon", Start: now.Add(time.Hour), End: now.Add(2 * time.Hour)}
-	later := Event{CalendarName: "b", Summary: "Later today", Start: now.Add(3 * time.Hour), End: now.Add(4 * time.Hour)}
-	latest := Event{CalendarName: "b", Summary: "Tomorrow", Start: now.Add(24 * time.Hour), End: now.Add(25 * time.Hour)}
+	ended := Event{CalendarName: "a", Summary: "Already ended", Start: now.Add(-2 * time.Hour), End: now.Add(-time.Hour)}
+	inProgress := Event{CalendarName: "a", Summary: "In progress", Start: now.Add(-10 * time.Minute), End: now.Add(20 * time.Minute)}
+	withinLeadTime := Event{CalendarName: "a", Summary: "Starting in 20 min", Start: now.Add(20 * time.Minute), End: now.Add(50 * time.Minute)}
+	tooFarAhead := Event{CalendarName: "b", Summary: "Starting in 45 min", Start: now.Add(45 * time.Minute), End: now.Add(75 * time.Minute)}
+	allDayToday := Event{CalendarName: "b", Summary: "Birthday", AllDay: true, Start: now.Add(-6 * time.Hour), End: now.Add(6 * time.Hour)}
 
-	calendarDataStore.Store("a", []Event{past, soon})
-	calendarDataStore.Store("b", []Event{later, latest})
+	calendarDataStore.Store("a", []Event{ended, inProgress, withinLeadTime})
+	calendarDataStore.Store("b", []Event{tooFarAhead, allDayToday})
 	t.Cleanup(func() {
 		calendarDataStore.Delete("a")
 		calendarDataStore.Delete("b")
 	})
 
-	got := UpcomingEvents(2)
+	got := CurrentEvents(0)
 
-	if len(got) != 2 {
-		t.Fatalf("expected 2 events (capped), got %d", len(got))
+	if len(got) != 3 {
+		t.Fatalf("expected 3 currently relevant events, got %d: %+v", len(got), got)
 	}
-	if got[0].Summary != "Starting soon" || got[1].Summary != "Later today" {
-		t.Errorf("expected events sorted by start time with ended events excluded, got %+v", got)
+	wantOrder := []string{"Birthday", "In progress", "Starting in 20 min"}
+	for i, want := range wantOrder {
+		if got[i].Summary != want {
+			t.Errorf("event %d: expected %q, got %q", i, want, got[i].Summary)
+		}
+	}
+}
+
+func TestCurrentEvents_CapsAtMaxEvents(t *testing.T) {
+	now := time.Now()
+
+	first := Event{CalendarName: "a", Summary: "First", Start: now.Add(-time.Minute), End: now.Add(time.Hour)}
+	second := Event{CalendarName: "a", Summary: "Second", Start: now, End: now.Add(time.Hour)}
+
+	calendarDataStore.Store("a", []Event{first, second})
+	t.Cleanup(func() {
+		calendarDataStore.Delete("a")
+	})
+
+	got := CurrentEvents(1)
+
+	if len(got) != 1 {
+		t.Fatalf("expected 1 event (capped), got %d", len(got))
+	}
+	if got[0].Summary != "First" {
+		t.Errorf("expected 'First' (earliest start), got %q", got[0].Summary)
 	}
 }

@@ -48,9 +48,22 @@
     flex-direction: column;
 }
 
-.calendar--event--when {
+.calendar--event--meta {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
     font-size: 0.8rem;
     opacity: 0.8;
+}
+
+.calendar--event--calendar-name {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.calendar--event--calendar-name::after {
+    content: "\2022";
+    margin-left: 0.4rem;
 }
 
 .calendar--event--summary {

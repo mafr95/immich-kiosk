@@ -21,7 +21,7 @@ css calendarEventColor(color string) {
 	background-color: { color };
 }
 
-// CalendarEvents renders the list of upcoming calendar events.
+// CalendarEvents renders the list of currently relevant calendar events.
 templ CalendarEvents(events []calendar.Event, systemLang monday.Locale) {
 	<div class="calendar--events">
 		if len(events) == 0 {
@@ -33,7 +33,10 @@ templ CalendarEvents(events []calendar.Event, systemLang monday.Locale) {
 					<div class={ "calendar--event--color", calendarEventColor(event.Color) }></div>
 				}
 				<div class="calendar--event--details">
-					<div class="calendar--event--when">{ calendarEventWhen(event, systemLang) }</div>
+					<div class="calendar--event--meta">
+						<span class="calendar--event--calendar-name">{ event.CalendarName }</span>
+						<span class="calendar--event--when">{ calendarEventWhen(event, systemLang) }</span>
+					</div>
 					<div class="calendar--event--summary">{ event.Summary }</div>
 					if strings.TrimSpace(event.Location) != "" {
 						<div class="calendar--event--location">{ event.Location }</div>

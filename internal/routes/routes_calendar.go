@@ -32,7 +32,7 @@ func Calendar(baseConfig *config.Config) echo.HandlerFunc {
 			return c.NoContent(http.StatusNoContent)
 		}
 
-		events := calendar.UpcomingEvents(requestConfig.Calendar.MaxEvents)
+		events := calendar.CurrentEvents(requestConfig.Calendar.MaxEvents)
 
 		log.Debug(
 			requestID,
