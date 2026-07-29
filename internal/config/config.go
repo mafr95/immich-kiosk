@@ -178,6 +178,23 @@ type WeatherLocation struct {
 	Default          bool                       `yaml:"default" mapstructure:"default"`
 }
 
+type CalendarConfig struct {
+	// Calendars A list of calendars to fetch and display events from.
+	Calendars []Calendar `json:"calendars" yaml:"calendars" mapstructure:"calendars" default:"[]"`
+	// LookaheadDays how many days ahead to show upcoming events for.
+	LookaheadDays int `json:"lookaheadDays" yaml:"lookahead_days" mapstructure:"lookahead_days" default:"30"`
+	// MaxEvents the maximum number of upcoming events to display.
+	MaxEvents int `json:"maxEvents" yaml:"max_events" mapstructure:"max_events" default:"10"`
+	// RefreshInterval the interval in seconds between fetches of the calendar feeds.
+	RefreshInterval int `json:"refreshInterval" yaml:"refresh_interval" mapstructure:"refresh_interval" default:"1800"`
+}
+
+type Calendar struct {
+	Name  string `yaml:"name" mapstructure:"name" redact:"true"`
+	URL   string `yaml:"url" mapstructure:"url" redact:"true"`
+	Color string `yaml:"color" mapstructure:"color" default:""`
+}
+
 type Webhook struct {
 	URL    string `json:"url" yaml:"url" mapstructure:"url" redact:"true"`
 	Event  string `json:"event" yaml:"event" mapstructure:"event"`
@@ -478,6 +495,9 @@ type Config struct {
 
 	Weather WeatherConfig `json:"weather" yaml:"weather" mapstructure:"weather"`
 
+	// Calendar calendar feature configuration
+	Calendar CalendarConfig `json:"calendar" yaml:"calendar" mapstructure:"calendar"`
+
 	Iframe []string `json:"iframe" yaml:"iframe" mapstructure:"iframe" query:"iframe" form:"iframe" default:"[]"`
 
 	// CustomCSSClass add a class to the body tag
@@ -697,6 +717,8 @@ func (c *Config) Load() error {
 	c.checkHideCountries()
 	c.checkWeatherLocations()
 	c.checkWeatherRotationInterval()
+	c.checkCalendars()
+	c.checkCalendarConfig()
 	c.checkDebuging()
 	c.checkFetchedAssetsSize()
 	c.checkRedirects()

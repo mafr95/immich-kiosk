@@ -64,6 +64,9 @@ templ Home(viewData common.ViewData, secret string) {
 							if (viewData.ShowTime || viewData.ShowDate) {
 								@partials.ClockContainer(viewData.ClockSource, viewData.Theme, viewData.ShowTime, viewData.ShowSeconds)
 							}
+							if len(viewData.Calendar.Calendars) > 0 {
+								@partials.CalendarContainer(viewData.Theme, viewData.Calendar.RefreshInterval)
+							}
 						</div>
 						<div>
 							if viewData.Queries.Has(weather.WeatherParam) || viewData.Weather.HasDefault {

@@ -27,6 +27,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/damongolding/immich-kiosk/internal/cache"
+	"github.com/damongolding/immich-kiosk/internal/calendar"
 	"github.com/damongolding/immich-kiosk/internal/common"
 	"github.com/damongolding/immich-kiosk/internal/config"
 	"github.com/damongolding/immich-kiosk/internal/i18n"
@@ -214,6 +215,8 @@ func main() {
 
 	e.POST("/weather", routes.Weather(baseConfig))
 
+	e.POST("/calendar", routes.Calendar(baseConfig))
+
 	e.GET("/sleep", routes.Sleep(baseConfig))
 
 	e.Match([]string{http.MethodGet, http.MethodPost}, "/cache/flush", routes.FlushCache(baseConfig, c))
@@ -230,6 +233,12 @@ func main() {
 
 	for _, w := range baseConfig.Weather.Locations {
 		go weather.AddWeatherLocationWithForecast(c.Context(), w)
+	}
+
+	calendarLookahead := time.Duration(baseConfig.Calendar.LookaheadDays) * 24 * time.Hour
+	calendarRefreshInterval := time.Duration(baseConfig.Calendar.RefreshInterval) * time.Second
+	for _, cal := range baseConfig.Calendar.Calendars {
+		go calendar.AddCalendar(c.Context(), cal, calendarLookahead, calendarRefreshInterval)
 	}
 
 	if logLevel == log.ErrorLevel || logLevel == log.WarnLevel {

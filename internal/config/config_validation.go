@@ -348,6 +348,47 @@ func (c *Config) checkWeatherRotationInterval() {
 	}
 }
 
+// checkCalendars validates the Calendars in the Config.
+// It checks each Calendar for required fields (name and URL),
+// and logs a warning if any required fields are missing.
+func (c *Config) checkCalendars() {
+	var validCalendars []Calendar
+
+	for _, cal := range c.Calendar.Calendars {
+		missingFields := []string{}
+		if cal.Name == "" {
+			missingFields = append(missingFields, "name")
+		}
+		if cal.URL == "" {
+			missingFields = append(missingFields, "URL")
+		}
+
+		if len(missingFields) == 0 {
+			validCalendars = append(validCalendars, cal)
+		} else {
+			log.Warn("Calendar is missing required fields. Ignoring this calendar.",
+				"missing fields", strings.Join(missingFields, ", "), "name", cal.Name)
+		}
+	}
+
+	c.Calendar.Calendars = validCalendars
+}
+
+// checkCalendarConfig clamps the calendar RefreshInterval and LookaheadDays to sane minimums
+// so a misconfigured value can't hammer the upstream calendar provider or expand recurrences forever.
+func (c *Config) checkCalendarConfig() {
+	const minRefreshInterval = 300
+
+	if c.Calendar.RefreshInterval != 0 && c.Calendar.RefreshInterval < minRefreshInterval {
+		log.Warn("Calendar refresh_interval too low, setting to minimum", "value", c.Calendar.RefreshInterval)
+		c.Calendar.RefreshInterval = minRefreshInterval
+	}
+
+	if c.Calendar.LookaheadDays <= 0 {
+		c.Calendar.LookaheadDays = 30
+	}
+}
+
 // checkHideCountries processes the list of countries to hide in location information
 // by converting all country names to lowercase for case-insensitive matching.
 // If the HideCountries slice is empty, the function returns early without making

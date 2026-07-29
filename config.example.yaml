@@ -144,6 +144,17 @@ hide_button_action: tag # tag, archive, or both [tag, archive]
 #         visibility: false
 #         temperature_range: false
 
+## Calendar feature - use a calendar's public or secret address in iCal (.ics) format
+## (Google Calendar: Settings > Settings for my calendars > [calendar] > Integrate calendar)
+# calendar:
+#   lookahead_days: 30 # how many days ahead to show upcoming events for
+#   max_events: 10 # the maximum number of upcoming events to display
+#   refresh_interval: 1800 # in seconds (minimum: 300)
+#   calendars:
+#     - name: personal
+#       url: ""
+#       color: "#4285f4"
+
 ## Add iframes into Kiosk - you can use local files or remote URLs
 #iframe:
 # - https://iframe.immichkiosk.app/pokemon

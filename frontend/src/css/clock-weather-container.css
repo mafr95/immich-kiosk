@@ -13,6 +13,11 @@
     opacity: 1;
 }
 
+#clock-weather-container > div:first-child {
+    display: flex;
+    flex-direction: column;
+}
+
 .burn-in-dim #clock-weather-container {
     opacity: var(--burn-in-opacity);
     transition: opacity var(--burn-in-fade) ease-in-out;

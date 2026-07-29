@@ -1,0 +1,68 @@
+/* --- calendar --- */
+#calendar-container {
+    position: relative;
+    margin-top: 1rem;
+    opacity: 1;
+    transition: opacity 1s ease-out;
+    will-change: opacity;
+}
+
+#calendar-container.htmx-swapping {
+    opacity: 0;
+}
+
+.calendar--events {
+    position: relative;
+    z-index: var(--z-clock);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    font-size: 1rem;
+    color: #fff;
+    text-shadow: 0 0 1.25rem rgba(0, 0, 0, 0.6);
+}
+
+@media screen and (max-width: 31.25rem) {
+    .calendar--events {
+        padding: 0 0.5rem;
+    }
+}
+
+.calendar--event {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.calendar--event--color {
+    flex-shrink: 0;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.6);
+}
+
+.calendar--event--details {
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar--event--when {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.calendar--event--summary {
+    font-weight: bold;
+}
+
+.calendar--event--location {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* sleep mode */
+.sleep #calendar-container {
+    display: none;
+}

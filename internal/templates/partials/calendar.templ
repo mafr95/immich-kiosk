@@ -1,0 +1,62 @@
+package partials
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/damongolding/immich-kiosk/internal/calendar"
+	"github.com/goodsign/monday"
+)
+
+// calendarEventWhen formats an event's start for display: date only for
+// all-day events, otherwise date and time.
+func calendarEventWhen(event calendar.Event, systemLang monday.Locale) string {
+	if event.AllDay {
+		return monday.Format(event.Start, "Mon, Jan 2", systemLang)
+	}
+	return monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang)
+}
+
+css calendarEventColor(color string) {
+	background-color: { color };
+}
+
+// CalendarEvents renders the list of upcoming calendar events.
+templ CalendarEvents(events []calendar.Event, systemLang monday.Locale) {
+	<div class="calendar--events">
+		if len(events) == 0 {
+			<div class="calendar--empty"></div>
+		}
+		for _, event := range events {
+			<div class="calendar--event">
+				if event.Color != "" {
+					<div class={ "calendar--event--color", calendarEventColor(event.Color) }></div>
+				}
+				<div class="calendar--event--details">
+					<div class="calendar--event--when">{ calendarEventWhen(event, systemLang) }</div>
+					<div class="calendar--event--summary">{ event.Summary }</div>
+					if strings.TrimSpace(event.Location) != "" {
+						<div class="calendar--event--location">{ event.Location }</div>
+					}
+				</div>
+			</div>
+		}
+	</div>
+}
+
+// CalendarContainer renders the calendar widget with HTMX polling updates.
+templ CalendarContainer(theme string, refreshInterval int) {
+	{{
+		interval := refreshInterval
+		if interval <= 0 {
+			interval = 300
+		}
+	}}
+	<div
+		id="calendar-container"
+		class={ fmt.Sprintf("calendar--theme-%s", theme) }
+		hx-post="/calendar"
+		hx-trigger={ fmt.Sprintf("load, every %ds", interval) }
+		hx-swap="innerHTML"
+	></div>
+}
