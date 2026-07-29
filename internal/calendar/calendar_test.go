@@ -185,6 +185,59 @@ func TestExpandEvents_AllDayEvent(t *testing.T) {
 	}
 }
 
+func TestExpandEvents_MultiDayEventStartingBeforeWindow(t *testing.T) {
+	// Starts before windowStart (2024-01-01) but ends inside the window, so
+	// it must still be included - a naive "does start fall in window" check
+	// would incorrectly drop it.
+	raw := icsDoc(
+		"BEGIN:VEVENT\n" +
+			"UID:7@test\n" +
+			"DTSTAMP:20231201T000000Z\n" +
+			"DTSTART;VALUE=DATE:20231230\n" +
+			"DTEND;VALUE=DATE:20240103\n" +
+			"SUMMARY:Vacation\n" +
+			"END:VEVENT\n",
+	)
+	cal := mustParseCalendar(t, raw)
+
+	events := expandEvents(cal, "personal", "#fff", windowStart, windowEnd)
+
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].Summary != "Vacation" {
+		t.Errorf("expected 'Vacation', got %q", events[0].Summary)
+	}
+	if got := events[0].End.Format("2006-01-02"); got != "2024-01-03" {
+		t.Errorf("expected end date 2024-01-03, got %s", got)
+	}
+}
+
+func TestExpandEvents_MultiDayRecurringOccurrenceStartingBeforeWindow(t *testing.T) {
+	// Anchor occurrence (2023-12-30, 3 days long) starts before windowStart,
+	// but the yearly recurrence's second occurrence should be found normally.
+	raw := icsDoc(
+		"BEGIN:VEVENT\n" +
+			"UID:8@test\n" +
+			"DTSTAMP:20231201T000000Z\n" +
+			"DTSTART;VALUE=DATE:20231230\n" +
+			"DTEND;VALUE=DATE:20240102\n" +
+			"SUMMARY:Long Weekend\n" +
+			"RRULE:FREQ=YEARLY;COUNT=2\n" +
+			"END:VEVENT\n",
+	)
+	cal := mustParseCalendar(t, raw)
+
+	events := expandEvents(cal, "personal", "#fff", windowStart, windowEnd)
+
+	if len(events) != 1 {
+		t.Fatalf("expected 1 occurrence overlapping window, got %d: %+v", len(events), events)
+	}
+	if got := events[0].Start.Format("2006-01-02"); got != "2023-12-30" {
+		t.Errorf("expected occurrence starting 2023-12-30, got %s", got)
+	}
+}
+
 func TestCurrentEvents_FiltersToRelevantWindow(t *testing.T) {
 	now := time.Now()
 

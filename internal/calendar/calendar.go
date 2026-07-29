@@ -184,13 +184,21 @@ func expandEvents(parsed *ics.Calendar, calName, color string, windowStart, wind
 			}
 		}
 		duration := end.Sub(start)
+		widenBy := duration
+		if widenBy < 0 {
+			widenBy = 0
+		}
 
 		summary := propertyValue(vevent, ics.ComponentPropertySummary)
 		location := propertyValue(vevent, ics.ComponentPropertyLocation)
 
 		rrules, rruleErr := vevent.GetRRules()
 		if rruleErr != nil || len(rrules) == 0 {
-			if !start.Before(windowStart) && !start.After(windowEnd) {
+			// Include if the event's [start, end) span overlaps the window at
+			// all, not just if it starts within it - otherwise multi-day
+			// events that started before the window (e.g. yesterday) but are
+			// still ongoing would be missed entirely.
+			if !end.Before(windowStart) && !start.After(windowEnd) {
 				events = append(events, Event{
 					CalendarName: calName,
 					Color:        color,
@@ -225,7 +233,14 @@ func expandEvents(parsed *ics.Calendar, calName, color string, windowStart, wind
 			}
 		}
 
-		for _, occStart := range set.Between(windowStart, windowEnd, true) {
+		// Search from windowStart-duration so multi-day (or multi-hour)
+		// occurrences that started before the window but are still ongoing
+		// when it begins aren't missed by rrule's start-time-only matching.
+		for _, occStart := range set.Between(windowStart.Add(-widenBy), windowEnd, true) {
+			occEnd := occStart.Add(duration)
+			if occEnd.Before(windowStart) {
+				continue
+			}
 			events = append(events, Event{
 				CalendarName: calName,
 				Color:        color,
@@ -233,7 +248,7 @@ func expandEvents(parsed *ics.Calendar, calName, color string, windowStart, wind
 				Location:     location,
 				AllDay:       allDay,
 				Start:        occStart,
-				End:          occStart.Add(duration),
+				End:          occEnd,
 			})
 		}
 	}
