@@ -16,7 +16,7 @@
     z-index: var(--z-clock);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
     padding: 0 1rem;
     font-size: 1rem;
     color: #fff;
@@ -27,6 +27,19 @@
     .calendar--events {
         padding: 0 0.5rem;
     }
+}
+
+.calendar--group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.calendar--group--name {
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    opacity: 0.8;
 }
 
 .calendar--event {
@@ -48,22 +61,9 @@
     flex-direction: column;
 }
 
-.calendar--event--meta {
-    display: flex;
-    gap: 0.4rem;
-    align-items: baseline;
+.calendar--event--when {
     font-size: 0.8rem;
     opacity: 0.8;
-}
-
-.calendar--event--calendar-name {
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.calendar--event--calendar-name::after {
-    content: "\2022";
-    margin-left: 0.4rem;
 }
 
 .calendar--event--summary {

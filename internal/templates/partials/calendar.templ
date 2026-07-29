@@ -2,46 +2,95 @@ package partials
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/damongolding/immich-kiosk/internal/calendar"
+	"github.com/damongolding/immich-kiosk/internal/i18n"
 	"github.com/goodsign/monday"
 )
 
-// calendarEventWhen formats an event's start for display: date only for
-// all-day events, otherwise date and time.
-func calendarEventWhen(event calendar.Event, systemLang monday.Locale) string {
+// calendarEventWhen formats an event's timing for display. All-day events
+// show a translated "All day" label; multi-day events (all-day or timed)
+// additionally show their end date/time.
+func calendarEventWhen(event calendar.Event, systemLang monday.Locale, t func(string) string) string {
 	if event.AllDay {
-		return monday.Format(event.Start, "Mon, Jan 2", systemLang)
+		// DTEND is exclusive for all-day events, so the last actual day is End-24h.
+		displayEnd := event.End.AddDate(0, 0, -1)
+		if displayEnd.Format("2006-01-02") == event.Start.Format("2006-01-02") {
+			return t("all_day")
+		}
+		return fmt.Sprintf("%s %s %s", t("all_day"), t("until"), monday.Format(displayEnd, "Mon, Jan 2", systemLang))
 	}
-	return monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang)
+
+	if event.End.Format("2006-01-02") == event.Start.Format("2006-01-02") {
+		return monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang)
+	}
+	return fmt.Sprintf("%s %s %s",
+		monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang),
+		t("until"),
+		monday.Format(event.End, "Mon, Jan 2 15:04", systemLang),
+	)
 }
 
 css calendarEventColor(color string) {
 	background-color: { color };
 }
 
-// CalendarEvents renders the list of currently relevant calendar events.
+// calendarGroup is a set of events for a single calendar.
+type calendarGroup struct {
+	CalendarName string
+	Events       []calendar.Event
+}
+
+// groupEventsByCalendar groups events by calendar name (sorted alphabetically
+// for a stable layout), preserving each calendar's event order within its group.
+func groupEventsByCalendar(events []calendar.Event) []calendarGroup {
+	index := make(map[string]int)
+	var groups []calendarGroup
+
+	for _, event := range events {
+		i, ok := index[event.CalendarName]
+		if !ok {
+			i = len(groups)
+			index[event.CalendarName] = i
+			groups = append(groups, calendarGroup{CalendarName: event.CalendarName})
+		}
+		groups[i].Events = append(groups[i].Events, event)
+	}
+
+	sort.Slice(groups, func(i, j int) bool { return groups[i].CalendarName < groups[j].CalendarName })
+
+	return groups
+}
+
+// CalendarEvents renders the currently relevant calendar events, grouped by calendar.
 templ CalendarEvents(events []calendar.Event, systemLang monday.Locale) {
+	{{
+		groups := groupEventsByCalendar(events)
+		t := i18n.T()
+	}}
 	<div class="calendar--events">
-		if len(events) == 0 {
+		if len(groups) == 0 {
 			<div class="calendar--empty"></div>
 		}
-		for _, event := range events {
-			<div class="calendar--event">
-				if event.Color != "" {
-					<div class={ "calendar--event--color", calendarEventColor(event.Color) }></div>
-				}
-				<div class="calendar--event--details">
-					<div class="calendar--event--meta">
-						<span class="calendar--event--calendar-name">{ event.CalendarName }</span>
-						<span class="calendar--event--when">{ calendarEventWhen(event, systemLang) }</span>
+		for _, group := range groups {
+			<div class="calendar--group">
+				<div class="calendar--group--name">{ group.CalendarName }</div>
+				for _, event := range group.Events {
+					<div class="calendar--event">
+						if event.Color != "" {
+							<div class={ "calendar--event--color", calendarEventColor(event.Color) }></div>
+						}
+						<div class="calendar--event--details">
+							<div class="calendar--event--when">{ calendarEventWhen(event, systemLang, t) }</div>
+							<div class="calendar--event--summary">{ event.Summary }</div>
+							if strings.TrimSpace(event.Location) != "" {
+								<div class="calendar--event--location">{ event.Location }</div>
+							}
+						</div>
 					</div>
-					<div class="calendar--event--summary">{ event.Summary }</div>
-					if strings.TrimSpace(event.Location) != "" {
-						<div class="calendar--event--location">{ event.Location }</div>
-					}
-				</div>
+				}
 			</div>
 		}
 	</div>
