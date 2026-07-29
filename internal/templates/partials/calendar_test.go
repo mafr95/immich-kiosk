@@ -2,12 +2,25 @@ package partials
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/damongolding/immich-kiosk/internal/calendar"
 	"github.com/goodsign/monday"
 )
+
+// TestMain forces a fixed, non-UTC local timezone for this package's tests
+// so that calendarEventWhen's conversion of event times to time.Local is
+// actually exercised, regardless of the machine/CI runner's own timezone.
+func TestMain(m *testing.M) {
+	loc, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		panic(err)
+	}
+	time.Local = loc
+	os.Exit(m.Run())
+}
 
 func fakeTranslate(key string) string {
 	return "[" + key + "]"
@@ -37,9 +50,32 @@ func TestCalendarEventWhen_AllDayMultiDay(t *testing.T) {
 
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
-	want := fmt.Sprintf("%s %s %s", fakeTranslate("all_day"), fakeTranslate("until"), monday.Format(time.Date(2024, 1, 22, 0, 0, 0, 0, time.UTC), "Mon, Jan 2", monday.LocaleEnUS))
+	displayEnd := event.End.Local().AddDate(0, 0, -1)
+	want := fmt.Sprintf("%s %s %s", fakeTranslate("all_day"), fakeTranslate("until"), monday.Format(displayEnd, "Mon, Jan 2", monday.LocaleEnUS))
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
+	}
+}
+
+// TestCalendarEventWhen_ConvertsToLocalTimezone reproduces a real report: an
+// event stored as 00:00-01:00 in the UTC+2 (CEST) source calendar arrives as
+// 22:00-23:00Z in UTC. Without converting to time.Local before formatting,
+// the widget displayed the raw UTC hour (22:00) instead of the correct local
+// time (00:00).
+func TestCalendarEventWhen_ConvertsToLocalTimezone(t *testing.T) {
+	event := calendar.Event{
+		Start: time.Date(2024, 6, 19, 22, 0, 0, 0, time.UTC), // 2024-06-20 00:00 CEST
+		End:   time.Date(2024, 6, 19, 23, 0, 0, 0, time.UTC), // 2024-06-20 01:00 CEST
+	}
+
+	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
+
+	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
+	if got != want {
+		t.Errorf("expected %q, got %q", want, got)
+	}
+	if got == fmt.Sprintf("%s–%s", monday.Format(event.Start, "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End, "15:04", monday.LocaleEnUS)) {
+		t.Errorf("output still uses raw UTC time instead of local time: %q", got)
 	}
 }
 
@@ -51,7 +87,7 @@ func TestCalendarEventWhen_TimedSingleDay(t *testing.T) {
 
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
-	want := monday.Format(event.Start, "Mon, Jan 2 15:04", monday.LocaleEnUS)
+	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
 	}
@@ -66,9 +102,9 @@ func TestCalendarEventWhen_TimedMultiDay(t *testing.T) {
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
 	want := fmt.Sprintf("%s %s %s",
-		monday.Format(event.Start, "Mon, Jan 2 15:04", monday.LocaleEnUS),
+		monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS),
 		fakeTranslate("until"),
-		monday.Format(event.End, "Mon, Jan 2 15:04", monday.LocaleEnUS),
+		monday.Format(event.End.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS),
 	)
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)

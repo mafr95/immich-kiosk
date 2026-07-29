@@ -11,25 +11,30 @@ import (
 )
 
 // calendarEventWhen formats an event's timing for display. All-day events
-// show a translated "All day" label; multi-day events (all-day or timed)
-// additionally show their end date/time.
+// show a translated "All day" label; timed events always show their end
+// time; multi-day events (all-day or timed) show their full end date too.
+// Event times are converted to the server's local timezone first, since ICS
+// feeds commonly carry UTC or source-calendar timestamps.
 func calendarEventWhen(event calendar.Event, systemLang monday.Locale, t func(string) string) string {
+	start := event.Start.Local()
+	end := event.End.Local()
+
 	if event.AllDay {
 		// DTEND is exclusive for all-day events, so the last actual day is End-24h.
-		displayEnd := event.End.AddDate(0, 0, -1)
-		if displayEnd.Format("2006-01-02") == event.Start.Format("2006-01-02") {
+		displayEnd := end.AddDate(0, 0, -1)
+		if displayEnd.Format("2006-01-02") == start.Format("2006-01-02") {
 			return t("all_day")
 		}
 		return fmt.Sprintf("%s %s %s", t("all_day"), t("until"), monday.Format(displayEnd, "Mon, Jan 2", systemLang))
 	}
 
-	if event.End.Format("2006-01-02") == event.Start.Format("2006-01-02") {
-		return monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang)
+	if end.Format("2006-01-02") == start.Format("2006-01-02") {
+		return fmt.Sprintf("%s–%s", monday.Format(start, "Mon, Jan 2 15:04", systemLang), monday.Format(end, "15:04", systemLang))
 	}
 	return fmt.Sprintf("%s %s %s",
-		monday.Format(event.Start, "Mon, Jan 2 15:04", systemLang),
+		monday.Format(start, "Mon, Jan 2 15:04", systemLang),
 		t("until"),
-		monday.Format(event.End, "Mon, Jan 2 15:04", systemLang),
+		monday.Format(end, "Mon, Jan 2 15:04", systemLang),
 	)
 }
 
