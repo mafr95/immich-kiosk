@@ -80,38 +80,44 @@ type Event struct {
 // AddCalendar fetches a calendar feed, stores its upcoming events, and then
 // refreshes them on a ticker until ctx is cancelled.
 func AddCalendar(ctx context.Context, cal config.Calendar, lookahead, refreshInterval time.Duration) {
+	log.Info("Starting calendar sync", "name", cal.Name, "refresh_interval", refreshInterval, "lookahead", lookahead)
+
 	ticker := time.NewTicker(refreshInterval)
 	defer ticker.Stop()
 
-	log.Debug("Getting initial calendar events for", "name", cal.Name)
-	if err := refreshCalendar(ctx, cal, lookahead); err != nil {
-		log.Error("Failed to update initial calendar events", "name", cal.Name, "error", err)
-	} else {
-		log.Debug("Retrieved initial calendar events for", "name", cal.Name)
-	}
+	syncCalendar(ctx, cal, lookahead)
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Stopping calendar updates for", "name", cal.Name)
+			log.Debug("Stopping calendar sync", "name", cal.Name)
 			return
 		case <-ticker.C:
-			log.Debug("Getting calendar events for", "name", cal.Name)
-			if err := refreshCalendar(ctx, cal, lookahead); err != nil {
-				log.Error("Failed to update calendar events", "name", cal.Name, "error", err)
-			} else {
-				log.Debug("Retrieved calendar events for", "name", cal.Name)
-			}
+			syncCalendar(ctx, cal, lookahead)
 		}
 	}
 }
 
+// syncCalendar refreshes a single calendar and logs the outcome.
+func syncCalendar(ctx context.Context, cal config.Calendar, lookahead time.Duration) {
+	log.Debug("Syncing calendar", "name", cal.Name)
+
+	start := time.Now()
+	events, err := refreshCalendar(ctx, cal, lookahead)
+	if err != nil {
+		log.Error("Failed to sync calendar", "name", cal.Name, "error", err)
+		return
+	}
+
+	log.Info("Synced calendar", "name", cal.Name, "events", len(events), "duration", time.Since(start))
+}
+
 // refreshCalendar fetches and parses cal's ICS feed and stores its expanded
 // events (bounded to a day in the past through now+lookahead) in calendarDataStore.
-func refreshCalendar(ctx context.Context, cal config.Calendar, lookahead time.Duration) error {
-	parsed, err := fetchICS(ctx, cal.URL)
+func refreshCalendar(ctx context.Context, cal config.Calendar, lookahead time.Duration) ([]Event, error) {
+	parsed, err := fetchICS(ctx, cal.Name, cal.URL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	now := time.Now()
@@ -119,12 +125,14 @@ func refreshCalendar(ctx context.Context, cal config.Calendar, lookahead time.Du
 
 	calendarDataStore.Store(strings.ToLower(cal.Name), events)
 
-	return nil
+	return events, nil
 }
 
 // fetchICS fetches and parses an .ics feed from the given URL, retrying up to
-// 3 times with exponential backoff on transport errors.
-func fetchICS(ctx context.Context, url string) (*ics.Calendar, error) {
+// 3 times with exponential backoff on transport errors. calName is only used
+// for log context - the URL itself is never logged since it typically
+// contains a secret token.
+func fetchICS(ctx context.Context, calName, url string) (*ics.Calendar, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -137,7 +145,7 @@ func fetchICS(ctx context.Context, url string) (*ics.Calendar, error) {
 		if err == nil {
 			break
 		}
-		log.Error("Calendar request failed, retrying", "attempt", attempt+1, "err", err)
+		log.Warn("Calendar request failed, retrying", "name", calName, "attempt", attempt+1, "error", err)
 
 		backoff := time.Duration(1<<attempt) * time.Second
 		select {
@@ -148,16 +156,24 @@ func fetchICS(ctx context.Context, url string) (*ics.Calendar, error) {
 	}
 
 	if err != nil {
-		log.Error("Calendar request failed after retries", "err", err)
+		log.Error("Calendar request failed after retries", "name", calName, "error", err)
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	log.Debug("Fetched calendar feed", "name", calName, "status", res.StatusCode)
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
 
-	return ics.ParseCalendar(res.Body)
+	parsed, err := ics.ParseCalendar(res.Body)
+	if err != nil {
+		log.Error("Failed to parse calendar feed", "name", calName, "error", err)
+		return nil, err
+	}
+
+	return parsed, nil
 }
 
 // expandEvents walks every VEVENT in parsed, expanding any RRULE recurrences
@@ -170,6 +186,7 @@ func expandEvents(parsed *ics.Calendar, calName, color string, windowStart, wind
 	for _, vevent := range parsed.Events() {
 		start, err := vevent.GetStartAt()
 		if err != nil {
+			log.Warn("Skipping event with unparsable DTSTART", "calendar", calName, "uid", propertyValue(vevent, ics.ComponentPropertyUniqueId), "error", err)
 			continue
 		}
 

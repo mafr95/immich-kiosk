@@ -88,8 +88,8 @@ templ CalendarEvents(events []calendar.Event, systemLang monday.Locale) {
 							<div class={ "calendar--event--color", calendarEventColor(event.Color) }></div>
 						}
 						<div class="calendar--event--details">
-							<div class="calendar--event--when">{ calendarEventWhen(event, systemLang, t) }</div>
 							<div class="calendar--event--summary">{ event.Summary }</div>
+							<div class="calendar--event--when">{ calendarEventWhen(event, systemLang, t) }</div>
 							if strings.TrimSpace(event.Location) != "" {
 								<div class="calendar--event--location">{ event.Location }</div>
 							}
