@@ -243,12 +243,13 @@ func TestCurrentEvents_FiltersToRelevantWindow(t *testing.T) {
 
 	ended := Event{CalendarName: "a", Summary: "Already ended", Start: now.Add(-2 * time.Hour), End: now.Add(-time.Hour)}
 	inProgress := Event{CalendarName: "a", Summary: "In progress", Start: now.Add(-10 * time.Minute), End: now.Add(20 * time.Minute)}
-	withinLeadTime := Event{CalendarName: "a", Summary: "Starting in 20 min", Start: now.Add(20 * time.Minute), End: now.Add(50 * time.Minute)}
-	tooFarAhead := Event{CalendarName: "b", Summary: "Starting in 45 min", Start: now.Add(45 * time.Minute), End: now.Add(75 * time.Minute)}
+	laterToday := Event{CalendarName: "a", Summary: "Later today", Start: now.Add(20 * time.Minute), End: now.Add(50 * time.Minute)}
+	laterTodayToo := Event{CalendarName: "b", Summary: "Also later today", Start: now.Add(45 * time.Minute), End: now.Add(75 * time.Minute)}
+	tomorrow := Event{CalendarName: "b", Summary: "Tomorrow", Start: startOfDay(now).Add(24*time.Hour + time.Hour), End: startOfDay(now).Add(24*time.Hour + 2*time.Hour)}
 	allDayToday := Event{CalendarName: "b", Summary: "Birthday", AllDay: true, Start: now.Add(-6 * time.Hour), End: now.Add(6 * time.Hour)}
 
-	calendarDataStore.Store("a", []Event{ended, inProgress, withinLeadTime})
-	calendarDataStore.Store("b", []Event{tooFarAhead, allDayToday})
+	calendarDataStore.Store("a", []Event{ended, inProgress, laterToday})
+	calendarDataStore.Store("b", []Event{laterTodayToo, tomorrow, allDayToday})
 	t.Cleanup(func() {
 		calendarDataStore.Delete("a")
 		calendarDataStore.Delete("b")
@@ -256,10 +257,10 @@ func TestCurrentEvents_FiltersToRelevantWindow(t *testing.T) {
 
 	got := CurrentEvents(0)
 
-	if len(got) != 3 {
-		t.Fatalf("expected 3 currently relevant events, got %d: %+v", len(got), got)
+	if len(got) != 4 {
+		t.Fatalf("expected 4 currently relevant events, got %d: %+v", len(got), got)
 	}
-	wantOrder := []string{"Birthday", "In progress", "Starting in 20 min"}
+	wantOrder := []string{"Birthday", "In progress", "Later today", "Also later today"}
 	for i, want := range wantOrder {
 		if got[i].Summary != want {
 			t.Errorf("event %d: expected %q, got %q", i, want, got[i].Summary)

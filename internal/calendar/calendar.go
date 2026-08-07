@@ -331,13 +331,10 @@ func propertyValue(vevent *ics.VEvent, prop ics.ComponentProperty) string {
 	return p.Value
 }
 
-// timedEventLeadTime is how long before a timed event's start it becomes visible.
-const timedEventLeadTime = 30 * time.Minute
-
 // CurrentEvents returns the merged, sorted list of currently relevant events
 // across all configured calendars, capped at maxEvents (0 or negative means
 // unlimited). An all-day event is relevant for its entire day; a timed event
-// becomes relevant timedEventLeadTime before it starts and stops being
+// becomes relevant from the start of its calendar day and stops being
 // relevant once it ends.
 func CurrentEvents(maxEvents int) []Event {
 	now := time.Now()
@@ -351,7 +348,7 @@ func CurrentEvents(maxEvents int) []Event {
 		for _, e := range events {
 			visibleFrom := e.Start
 			if !e.AllDay {
-				visibleFrom = e.Start.Add(-timedEventLeadTime)
+				visibleFrom = startOfDay(e.Start)
 			}
 			if now.Before(visibleFrom) || !now.Before(e.End) {
 				continue
@@ -368,4 +365,10 @@ func CurrentEvents(maxEvents int) []Event {
 	}
 
 	return all
+}
+
+// startOfDay returns midnight of t's calendar day, in t's location.
+func startOfDay(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
