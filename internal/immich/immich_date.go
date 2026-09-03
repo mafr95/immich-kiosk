@@ -59,6 +59,7 @@ func (a *Asset) RandomAssetInDateRange(dateRange, requestID, deviceID string, is
 		}
 
 		requestBody := SearchRandomBody{
+			Visibility:  Timeline,
 			Type:        string(ImageType),
 			TakenAfter:  dateStart.Format(time.RFC3339),
 			TakenBefore: dateEnd.Format(time.RFC3339),
@@ -73,7 +74,7 @@ func (a *Asset) RandomAssetInDateRange(dateRange, requestID, deviceID string, is
 		}
 
 		if a.requestConfig.ShowArchived {
-			requestBody.WithArchived = true
+			requestBody.Visibility = ""
 		}
 
 		filterFavorites(&requestBody, a.requestConfig.FilterFavorites)

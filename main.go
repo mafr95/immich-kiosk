@@ -230,6 +230,7 @@ func main() {
 	e.GET("/video/:videoID", routes.NewVideo(baseConfig.Kiosk.DemoMode), AssetCacheMiddlewareWithConfig(baseConfig))
 
 	e.GET("/:redirect", routes.Redirect(baseConfig, c))
+	e.GET("/redirects/albums", routes.AlbumRedirects(baseConfig, c))
 
 	for _, w := range baseConfig.Weather.Locations {
 		go weather.AddWeatherLocationWithForecast(c.Context(), w)
@@ -293,7 +294,7 @@ func addMiddleware(e *echo.Echo, baseConfig *config.Config) {
 				path := c.Request().URL.Path
 				return strings.HasPrefix(path, "/assets/") || path == "/health" || path == "/favicon.ico"
 			},
-			KeyLookup: "header:Authorization,header:X-Api-Key,query:authsecret,query:password,form:authsecret,form:password",
+			KeyLookup: "header:Authorization:Bearer ,header:X-Api-Key,query:authsecret,query:password,form:authsecret,form:password",
 			Validator: func(c *echo.Context, key string, _ middleware.ExtractorSource) (bool, error) {
 				if subtle.ConstantTimeCompare([]byte(key), []byte(baseConfig.Kiosk.Password)) == 1 {
 					return true, nil

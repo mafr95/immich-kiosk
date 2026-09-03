@@ -137,13 +137,17 @@ func (a *Asset) albumAssets(albumID, requestID, deviceID string, favoritesOnly b
 	}
 
 	requestBody := SearchRandomBody{
-		Type:         string(ImageType),
-		AlbumIDs:     []string{albumID},
-		WithPeople:   true,
-		WithExif:     true,
-		IsFavorite:   favoritesOnly,
-		WithArchived: a.requestConfig.ShowArchived,
-		Size:         a.requestConfig.Kiosk.FetchedAssetsSize,
+		Visibility: Timeline,
+		Type:       string(ImageType),
+		AlbumIDs:   []string{albumID},
+		WithPeople: true,
+		WithExif:   true,
+		IsFavorite: favoritesOnly,
+		Size:       a.requestConfig.Kiosk.FetchedAssetsSize,
+	}
+
+	if a.requestConfig.ShowArchived {
+		requestBody.Visibility = ""
 	}
 
 	assetOrder := AlbumOrder(a.requestConfig.AlbumOrder)
@@ -309,10 +313,9 @@ func (a *Asset) AssetFromAlbum(albumID string, requestID, deviceID string) error
 				// from Immich V3 album assets use the PaginatedMetadataResponse type
 				assetsToCache := PaginatedMetadataResponse{
 					URL: apiURL,
+					// Remove the current image from the slice
+					Assets: slices.Delete(album.Assets, assetIndex, assetIndex+1),
 				}
-
-				// Remove the current image from the slice
-				assetsToCache.Assets = slices.Delete(album.Assets, assetIndex, assetIndex+1)
 
 				jsonBytes, marshalErr := json.Marshal(assetsToCache)
 				if marshalErr != nil {
