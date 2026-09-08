@@ -25,16 +25,16 @@ func calendarEventWhen(event calendar.Event, systemLang monday.Locale, t func(st
 		if displayEnd.Format("2006-01-02") == start.Format("2006-01-02") {
 			return t("all_day")
 		}
-		return fmt.Sprintf("%s %s %s", t("all_day"), t("until"), monday.Format(displayEnd, "Mon, Jan 2", systemLang))
+		return fmt.Sprintf("%s %s %s", t("all_day"), t("until"), monday.Format(displayEnd, "Mon, 02. Jan", systemLang))
 	}
 
 	if end.Format("2006-01-02") == start.Format("2006-01-02") {
-		return fmt.Sprintf("%s–%s", monday.Format(start, "Mon, Jan 2 15:04", systemLang), monday.Format(end, "15:04", systemLang))
+		return fmt.Sprintf("%s–%s", monday.Format(start, "Mon, 02. Jan 15:04", systemLang), monday.Format(end, "15:04", systemLang))
 	}
 	return fmt.Sprintf("%s %s %s",
-		monday.Format(start, "Mon, Jan 2 15:04", systemLang),
+		monday.Format(start, "Mon, 02. Jan 15:04", systemLang),
 		t("until"),
-		monday.Format(end, "Mon, Jan 2 15:04", systemLang),
+		monday.Format(end, "Mon, 02. Jan 15:04", systemLang),
 	)
 }
 

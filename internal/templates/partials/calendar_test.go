@@ -51,7 +51,7 @@ func TestCalendarEventWhen_AllDayMultiDay(t *testing.T) {
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
 	displayEnd := event.End.Local().AddDate(0, 0, -1)
-	want := fmt.Sprintf("%s %s %s", fakeTranslate("all_day"), fakeTranslate("until"), monday.Format(displayEnd, "Mon, Jan 2", monday.LocaleEnUS))
+	want := fmt.Sprintf("%s %s %s", fakeTranslate("all_day"), fakeTranslate("until"), monday.Format(displayEnd, "Mon, 02. Jan", monday.LocaleEnUS))
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
 	}
@@ -70,11 +70,11 @@ func TestCalendarEventWhen_ConvertsToLocalTimezone(t *testing.T) {
 
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
-	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
+	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, 02. Jan 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
 	}
-	if got == fmt.Sprintf("%s–%s", monday.Format(event.Start, "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End, "15:04", monday.LocaleEnUS)) {
+	if got == fmt.Sprintf("%s–%s", monday.Format(event.Start, "Mon, 02. Jan 15:04", monday.LocaleEnUS), monday.Format(event.End, "15:04", monday.LocaleEnUS)) {
 		t.Errorf("output still uses raw UTC time instead of local time: %q", got)
 	}
 }
@@ -87,7 +87,7 @@ func TestCalendarEventWhen_TimedSingleDay(t *testing.T) {
 
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
-	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
+	want := fmt.Sprintf("%s–%s", monday.Format(event.Start.Local(), "Mon, 02. Jan 15:04", monday.LocaleEnUS), monday.Format(event.End.Local(), "15:04", monday.LocaleEnUS))
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
 	}
@@ -102,9 +102,9 @@ func TestCalendarEventWhen_TimedMultiDay(t *testing.T) {
 	got := calendarEventWhen(event, monday.LocaleEnUS, fakeTranslate)
 
 	want := fmt.Sprintf("%s %s %s",
-		monday.Format(event.Start.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS),
+		monday.Format(event.Start.Local(), "Mon, 02. Jan 15:04", monday.LocaleEnUS),
 		fakeTranslate("until"),
-		monday.Format(event.End.Local(), "Mon, Jan 2 15:04", monday.LocaleEnUS),
+		monday.Format(event.End.Local(), "Mon, 02. Jan 15:04", monday.LocaleEnUS),
 	)
 	if got != want {
 		t.Errorf("expected %q, got %q", want, got)
