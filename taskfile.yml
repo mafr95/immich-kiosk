@@ -1,7 +1,7 @@
 version: "3"
 
 env:
-  VERSION: 0.41.0-beta.2
+  VERSION: 0.43.2-beta.1
 
 silent: true
 
@@ -121,9 +121,14 @@ tasks:
     desc: Check for outdated Go and frontend dependencies
     deps: [go:outdated, frontend:outdated, mise:outdated]
 
+  tools:update:
+    desc: Update tools
+    cmds:
+      - mise up
+
   deps:update:
     desc: Update Go and frontend dependencies
-    deps: [go:update-deps, frontend:update]
+    deps: [go:update-deps, frontend:update, tools:update]
     cmds:
       - go mod tidy
 
