@@ -1,5 +1,4 @@
 import { formatRFC3339 } from "date-fns/formatRFC3339";
-import DOMPurify from "dompurify";
 import htmx from "htmx.org";
 import type { TimeFormat } from "./clock";
 import { initClock } from "./clock";
@@ -28,6 +27,7 @@ import {
     triggerNewAsset,
     videoHandler,
 } from "./polling";
+import { tryRecoveryMode } from "./recovery";
 import { sleepMode } from "./sleep";
 import { preventSleep } from "./wakelock";
 import { weatherRotationPosition } from "./weather";
@@ -89,6 +89,9 @@ const MAX_FRAMES: number = 2 as const;
 const TIMEOUT_RETRIES: number = 2 as const;
 const timeouts: Record<string, number> = {};
 
+const FAILED_REQUEST_RETRIES: number = 3 as const;
+let consecutiveFailedRequests = 0;
+
 // Parse kiosk data from the HTML element
 const kioskData: KioskData = JSON.parse(
     document.getElementById("kiosk-data")?.textContent || "{}",
@@ -107,7 +110,6 @@ const fullScreenButtonSeperator = htmx.find(
 ) as HTMLElement | null;
 const kioskContainer = htmx.find("#kiosk-container") as HTMLElement | null;
 const kiosk = htmx.find("#kiosk") as HTMLElement | null;
-const kioskQueries = htmx.findAll(".kiosk-param");
 const menu = htmx.find(".navigation") as HTMLElement | null;
 const menuInteraction = htmx.find(
     "#navigation-interaction-area--menu",
@@ -186,19 +188,35 @@ async function init(): Promise<void> {
     }
 
     if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("/assets/js/sw.js").then(
-            () => {
-                console.log("ServiceWorker registration successful");
-            },
-            (err) => {
-                console.log("ServiceWorker registration failed: ", err);
-            },
-        );
+        navigator.serviceWorker
+            .register("/assets/js/sw.js", { scope: "/" })
+            .then(
+                () => {
+                    console.log("ServiceWorker registration successful");
+                },
+                (err) => {
+                    console.log("ServiceWorker registration failed: ", err);
+                },
+            );
+
+        navigator.serviceWorker
+            .getRegistrations()
+            .then((registrations) => {
+                for (const registration of registrations) {
+                    if (!registration.scope.endsWith("/assets/js/")) {
+                        continue;
+                    }
+                    registration.unregister();
+                }
+            })
+            .catch(() => {
+                /* nothing we can do */
+            });
     }
 
     if (!fullscreenAPI.requestFullscreen) {
-        fullscreenButton && htmx.remove(fullscreenButton);
-        fullScreenButtonSeperator && htmx.remove(fullScreenButtonSeperator);
+        fullscreenButton?.remove();
+        fullScreenButtonSeperator?.remove();
     }
 
     if (pollInterval) {
@@ -375,7 +393,7 @@ function addEventListeners(): void {
             return;
         }
 
-        htmx.addClass(offlineSVG, "offline");
+        offlineSVG.classList.add("offline");
     });
 
     // Server online check. Fires after every AJAX request.
@@ -387,10 +405,16 @@ function addEventListeners(): void {
         }
 
         if (e.detail.successful) {
-            htmx.removeClass(offlineSVG, "offline");
+            offlineSVG.classList.remove("offline");
             timeouts[e.detail.pathInfo.requestPath] = 0;
+            consecutiveFailedRequests = 0;
         } else {
-            htmx.addClass(offlineSVG, "offline");
+            offlineSVG.classList.add("offline");
+            consecutiveFailedRequests += 1;
+            if (consecutiveFailedRequests > FAILED_REQUEST_RETRIES) {
+                consecutiveFailedRequests = 0;
+                tryRecoveryMode();
+            }
         }
     });
 
@@ -417,7 +441,9 @@ function addEventListeners(): void {
         timeouts[e.detail.pathInfo.requestPath] = currentTimeout;
 
         if (currentTimeout > TIMEOUT_RETRIES) {
-            window.location.reload();
+            // window.location.reload();
+            consecutiveFailedRequests = 0;
+            tryRecoveryMode();
         }
     });
 
@@ -508,7 +534,7 @@ async function cleanupFrames(): Promise<void> {
     const kioskScripts = htmx.findAll(kiosk as HTMLElement, "script");
     if (kioskScripts?.length) {
         kioskScripts.forEach((s) => {
-            htmx.remove(s, 1000);
+            setTimeout(() => s.remove(), 1000);
         });
     }
 
@@ -523,7 +549,7 @@ async function cleanupFrames(): Promise<void> {
             ? frames.length - 1
             : 0;
         try {
-            htmx.remove(frames[toRemove]);
+            frames[toRemove].remove();
         } catch (error) {
             console.error("Failed to remove frame:", error);
         }
@@ -645,38 +671,6 @@ function kioskClass(
 ): void {
     if (classOff) kioskContainer?.classList.remove(classOff);
     if (classOn) kioskContainer?.classList.add(classOn);
-}
-
-// Add kiosk query parameters to HTMX requests
-if (kioskQueries.length > 0) {
-    document.body.addEventListener("htmx:configRequest", (event: Event) => {
-        const e = event as HTMXEvent;
-
-        if (!e.detail?.parameters) {
-            console.warn("Request parameters object not found");
-            return;
-        }
-
-        try {
-            kioskQueries.forEach((q: Element) => {
-                if (!(q instanceof HTMLInputElement)) {
-                    console.warn(`Element ${q} is not an input`);
-                    return;
-                }
-
-                if (!q.name || !q.value) {
-                    console.debug(`Skipping invalid input: ${q}`);
-                    return;
-                }
-
-                const sanitizedValue = DOMPurify.sanitize(q.value);
-
-                e.detail.parameters.append(q.name, sanitizedValue);
-            });
-        } catch (error) {
-            console.error("Error processing parameters:", error);
-        }
-    });
 }
 
 // Initialize Kiosk when the DOM is fully loaded

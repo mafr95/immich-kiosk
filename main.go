@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"embed"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/damongolding/immich-kiosk/internal/i18n"
 	"github.com/damongolding/immich-kiosk/internal/immich"
 	"github.com/damongolding/immich-kiosk/internal/routes"
+	"github.com/damongolding/immich-kiosk/internal/templates/partials"
 	"github.com/damongolding/immich-kiosk/internal/utils"
 	"github.com/damongolding/immich-kiosk/internal/video"
 	"github.com/damongolding/immich-kiosk/internal/weather"
@@ -40,8 +42,8 @@ import (
 
 const (
 	supportedImmichVersionMajor = 3
-	supportedImmichVersionMinor = 0
-	supportedImmichVersionPatch = 3
+	supportedImmichVersionMinor = 2
+	supportedImmichVersionPatch = 0
 )
 
 // version current build version number
@@ -60,6 +62,15 @@ func init() {
 	routes.KioskVersion = version
 	config.SchemaJSON = SchemaJSON
 	i18n.LocaleFS = localeFS
+
+	bg, err := public.ReadFile("frontend/public/assets/images/noise-lite.png")
+	if err != nil {
+		log.Error(err)
+	}
+	partials.BGNoiseURI = fmt.Sprintf(
+		"data:image/png;base64,%s",
+		base64.StdEncoding.EncodeToString(bg),
+	)
 }
 
 // main initializes and starts the Immich Kiosk web server, sets up configuration, middleware, routes, and manages graceful shutdown.
@@ -163,6 +174,8 @@ func main() {
 	e.FileFS("/assets/js/kiosk.*.js", "frontend/public/assets/js/kiosk.js", public, StaticCacheMiddlewareWithConfig(baseConfig))
 	e.FileFS("/assets/js/url-builder.*.js", "frontend/public/assets/js/url-builder.js", public, StaticCacheMiddlewareWithConfig(baseConfig))
 
+	e.GET("/assets/js/sw.js", routes.ServiceWorker(baseConfig, public))
+
 	// serve embdedd staic assets
 	e.StaticFS("/assets", echo.MustSubFS(public, "frontend/public/assets"))
 
@@ -177,6 +190,8 @@ func main() {
 	e.GET("/health", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
+
+	e.GET("/recover", routes.Recovering(baseConfig, &public))
 
 	if baseConfig.Kiosk.EnableURLBuilder {
 		e.GET("/url-builder", routes.URLBuilderPage(baseConfig, c, false))

@@ -630,6 +630,7 @@ const (
 	SyncEntityTypeAssetFaceDeleteV1          SyncEntityType = "AssetFaceDeleteV1"
 	SyncEntityTypeAssetFaceV1                SyncEntityType = "AssetFaceV1"
 	SyncEntityTypeAssetFaceV2                SyncEntityType = "AssetFaceV2"
+	SyncEntityTypeAssetFaceV3                SyncEntityType = "AssetFaceV3"
 	SyncEntityTypeAssetMetadataDeleteV1      SyncEntityType = "AssetMetadataDeleteV1"
 	SyncEntityTypeAssetMetadataV1            SyncEntityType = "AssetMetadataV1"
 	SyncEntityTypeAssetOcrDeleteV1           SyncEntityType = "AssetOcrDeleteV1"
@@ -637,6 +638,7 @@ const (
 	SyncEntityTypeAssetV1                    SyncEntityType = "AssetV1"
 	SyncEntityTypeAssetV2                    SyncEntityType = "AssetV2"
 	SyncEntityTypeAuthUserV1                 SyncEntityType = "AuthUserV1"
+	SyncEntityTypeAuthUserV2                 SyncEntityType = "AuthUserV2"
 	SyncEntityTypeMemoryDeleteV1             SyncEntityType = "MemoryDeleteV1"
 	SyncEntityTypeMemoryToAssetDeleteV1      SyncEntityType = "MemoryToAssetDeleteV1"
 	SyncEntityTypeMemoryToAssetV1            SyncEntityType = "MemoryToAssetV1"
@@ -679,11 +681,13 @@ const (
 	SyncRequestTypeAssetExifsV1        SyncRequestType = "AssetExifsV1"
 	SyncRequestTypeAssetFacesV1        SyncRequestType = "AssetFacesV1"
 	SyncRequestTypeAssetFacesV2        SyncRequestType = "AssetFacesV2"
+	SyncRequestTypeAssetFacesV3        SyncRequestType = "AssetFacesV3"
 	SyncRequestTypeAssetMetadataV1     SyncRequestType = "AssetMetadataV1"
 	SyncRequestTypeAssetOcrV1          SyncRequestType = "AssetOcrV1"
 	SyncRequestTypeAssetsV1            SyncRequestType = "AssetsV1"
 	SyncRequestTypeAssetsV2            SyncRequestType = "AssetsV2"
 	SyncRequestTypeAuthUsersV1         SyncRequestType = "AuthUsersV1"
+	SyncRequestTypeAuthUsersV2         SyncRequestType = "AuthUsersV2"
 	SyncRequestTypeMemoriesV1          SyncRequestType = "MemoriesV1"
 	SyncRequestTypeMemoryToAssetsV1    SyncRequestType = "MemoryToAssetsV1"
 	SyncRequestTypePartnerAssetExifsV1 SyncRequestType = "PartnerAssetExifsV1"
@@ -1424,7 +1428,7 @@ type AlbumResponseDto struct {
 	// Description Album description
 	Description string `json:"description"`
 
-	// EndDate End date (latest asset)
+	// EndDate UTC representation of (local) end date (latest asset)
 	EndDate *time.Time `json:"endDate,omitempty"`
 
 	// HasSharedLink Has shared link
@@ -1445,7 +1449,7 @@ type AlbumResponseDto struct {
 	// Shared Is shared album
 	Shared bool `json:"shared"`
 
-	// StartDate Start date (earliest asset)
+	// StartDate UTC representation of (local) start date (earliest asset)
 	StartDate *time.Time `json:"startDate,omitempty"`
 
 	// UpdatedAt Last update date
@@ -1611,10 +1615,10 @@ type AssetBulkUpdateDto struct {
 	IsFavorite *bool `json:"isFavorite,omitempty"`
 
 	// Latitude Latitude coordinate
-	Latitude *float32 `json:"latitude,omitempty"`
+	Latitude *float64 `json:"latitude,omitempty"`
 
 	// Longitude Longitude coordinate
-	Longitude *float32 `json:"longitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
 
 	// Rating Rating in range [1-5] (starred), -1 (rejected), or null (unrated)
 	Rating *int `json:"rating"`
@@ -2583,25 +2587,25 @@ type ExifResponseDto struct {
 	ExposureTime *string `json:"exposureTime"`
 
 	// FNumber F-number (aperture)
-	FNumber *float32 `json:"fNumber"`
+	FNumber *float64 `json:"fNumber"`
 
 	// FileSizeInByte File size in bytes
 	FileSizeInByte *int `json:"fileSizeInByte"`
 
 	// FocalLength Focal length in mm
-	FocalLength *float32 `json:"focalLength"`
+	FocalLength *float64 `json:"focalLength"`
 
 	// Iso ISO sensitivity
 	Iso *int `json:"iso"`
 
 	// Latitude GPS latitude
-	Latitude *float32 `json:"latitude"`
+	Latitude *float64 `json:"latitude"`
 
 	// LensModel Lens model
 	LensModel *string `json:"lensModel"`
 
 	// Longitude GPS longitude
-	Longitude *float32 `json:"longitude"`
+	Longitude *float64 `json:"longitude"`
 
 	// Make Camera make
 	Make *string `json:"make"`
@@ -3273,26 +3277,26 @@ type NotificationUpdateDto struct {
 
 // NumberFilter defines model for NumberFilter.
 type NumberFilter struct {
-	Eq    *float32   `json:"eq,omitempty"`
-	Gt    *float32   `json:"gt,omitempty"`
-	Gte   *float32   `json:"gte,omitempty"`
-	In    *[]float32 `json:"in,omitempty"`
-	Lt    *float32   `json:"lt,omitempty"`
-	Lte   *float32   `json:"lte,omitempty"`
-	Ne    *float32   `json:"ne,omitempty"`
-	NotIn *[]float32 `json:"notIn,omitempty"`
+	Eq    *float64   `json:"eq,omitempty"`
+	Gt    *float64   `json:"gt,omitempty"`
+	Gte   *float64   `json:"gte,omitempty"`
+	In    *[]float64 `json:"in,omitempty"`
+	Lt    *float64   `json:"lt,omitempty"`
+	Lte   *float64   `json:"lte,omitempty"`
+	Ne    *float64   `json:"ne,omitempty"`
+	NotIn *[]float64 `json:"notIn,omitempty"`
 }
 
 // NumberFilterNullable defines model for NumberFilterNullable.
 type NumberFilterNullable struct {
-	Eq    *float32   `json:"eq"`
-	Gt    *float32   `json:"gt,omitempty"`
-	Gte   *float32   `json:"gte,omitempty"`
-	In    *[]float32 `json:"in,omitempty"`
-	Lt    *float32   `json:"lt,omitempty"`
-	Lte   *float32   `json:"lte,omitempty"`
-	Ne    *float32   `json:"ne"`
-	NotIn *[]float32 `json:"notIn,omitempty"`
+	Eq    *float64   `json:"eq"`
+	Gt    *float64   `json:"gt,omitempty"`
+	Gte   *float64   `json:"gte,omitempty"`
+	In    *[]float64 `json:"in,omitempty"`
+	Lt    *float64   `json:"lt,omitempty"`
+	Lte   *float64   `json:"lte,omitempty"`
+	Ne    *float64   `json:"ne"`
+	NotIn *[]float64 `json:"notIn,omitempty"`
 }
 
 // OAuthAuthorizeResponseDto defines model for OAuthAuthorizeResponseDto.
@@ -3569,10 +3573,10 @@ type PlacesResponseDto struct {
 	Admin2name *string `json:"admin2name,omitempty"`
 
 	// Latitude Latitude coordinate
-	Latitude float32 `json:"latitude"`
+	Latitude float64 `json:"latitude"`
 
 	// Longitude Longitude coordinate
-	Longitude float32 `json:"longitude"`
+	Longitude float64 `json:"longitude"`
 
 	// Name Place name
 	Name string `json:"name"`
@@ -4005,7 +4009,7 @@ type ReverseGeocodingStateResponseDto struct {
 // RotateParameters defines model for RotateParameters.
 type RotateParameters struct {
 	// Angle Rotation angle in degrees
-	Angle float32 `json:"angle"`
+	Angle int `json:"angle"`
 }
 
 // SearchAlbumResponseDto defines model for SearchAlbumResponseDto.
@@ -5174,16 +5178,16 @@ type TimeBucketAssetResponseDto struct {
 	IsTrashed []bool `json:"isTrashed"`
 
 	// Latitude Array of latitude coordinates extracted from EXIF GPS data
-	Latitude *[]float32 `json:"latitude,omitempty"`
+	Latitude *[]float64 `json:"latitude,omitempty"`
 
 	// LivePhotoVideoId Array of live photo video asset IDs (null for non-live photos)
 	LivePhotoVideoId []string `json:"livePhotoVideoId"`
 
 	// LocalOffsetHours Array of UTC offset hours at the time each photo was taken. Positive values are east of UTC, negative values are west of UTC. Values may be fractional (e.g., 5.5 for +05:30, -9.75 for -09:45). Applying this offset to 'fileCreatedAt' will give you the time the photo was taken from the photographer's perspective.
-	LocalOffsetHours []float32 `json:"localOffsetHours"`
+	LocalOffsetHours []float64 `json:"localOffsetHours"`
 
 	// Longitude Array of longitude coordinates extracted from EXIF GPS data
-	Longitude *[]float32 `json:"longitude,omitempty"`
+	Longitude *[]float64 `json:"longitude,omitempty"`
 
 	// OwnerId Array of owner IDs for each asset
 	OwnerId []string `json:"ownerId"`
@@ -5192,7 +5196,7 @@ type TimeBucketAssetResponseDto struct {
 	ProjectionType []string `json:"projectionType"`
 
 	// Ratio Array of aspect ratios (width/height) for each asset
-	Ratio []float32 `json:"ratio"`
+	Ratio []float64 `json:"ratio"`
 
 	// Stack Array of stack information as [stackId, assetCount] tuples (null for non-stacked assets)
 	Stack *[][]string `json:"stack,omitempty"`
@@ -5264,13 +5268,13 @@ type UpdateAssetDto struct {
 	IsFavorite *bool `json:"isFavorite,omitempty"`
 
 	// Latitude Latitude coordinate
-	Latitude *float32 `json:"latitude,omitempty"`
+	Latitude *float64 `json:"latitude,omitempty"`
 
 	// LivePhotoVideoId Live photo video ID
 	LivePhotoVideoId *openapi_types.UUID `json:"livePhotoVideoId"`
 
 	// Longitude Longitude coordinate
-	Longitude *float32 `json:"longitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
 
 	// Rating Rating in range [1-5] (starred), -1 (rejected), or null (unrated)
 	Rating *int `json:"rating"`
@@ -6436,7 +6440,7 @@ type GetTimeBucketParams struct {
 	// TagId Filter assets with a specific tag
 	TagId *openapi_types.UUID `form:"tagId,omitempty" json:"tagId,omitempty"`
 
-	// TimeBucket Time bucket identifier in YYYY-MM-DD format
+	// TimeBucket Time bucket identifier in YYYY-MM-DDT00:00:00.000Z format
 	TimeBucket string `form:"timeBucket" json:"timeBucket"`
 
 	// UserId Filter assets by specific user ID
@@ -6754,11 +6758,14 @@ type CreatePersonJSONRequestBody = PersonCreateDto
 // UpdatePeopleJSONRequestBody defines body for UpdatePeople for application/json ContentType.
 type UpdatePeopleJSONRequestBody = PeopleUpdateDto
 
+// MergePeopleJSONRequestBody defines body for MergePeople for application/json ContentType.
+type MergePeopleJSONRequestBody = MergePersonDto
+
 // UpdatePersonJSONRequestBody defines body for UpdatePerson for application/json ContentType.
 type UpdatePersonJSONRequestBody = PersonUpdateDto
 
-// MergePersonJSONRequestBody defines body for MergePerson for application/json ContentType.
-type MergePersonJSONRequestBody = MergePersonDto
+// MergePersonLegacyJSONRequestBody defines body for MergePersonLegacy for application/json ContentType.
+type MergePersonLegacyJSONRequestBody = MergePersonDto
 
 // ReassignFacesJSONRequestBody defines body for ReassignFaces for application/json ContentType.
 type ReassignFacesJSONRequestBody = AssetFaceUpdateDto
@@ -7731,6 +7738,11 @@ type ClientInterface interface {
 
 	UpdatePeople(ctx context.Context, body UpdatePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// MergePeopleWithBody request with any body
+	MergePeopleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MergePeople(ctx context.Context, body MergePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeletePerson request
 	DeletePerson(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7742,10 +7754,10 @@ type ClientInterface interface {
 
 	UpdatePerson(ctx context.Context, id openapi_types.UUID, body UpdatePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// MergePersonWithBody request with any body
-	MergePersonWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// MergePersonLegacyWithBody request with any body
+	MergePersonLegacyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	MergePerson(ctx context.Context, id openapi_types.UUID, body MergePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	MergePersonLegacy(ctx context.Context, id openapi_types.UUID, body MergePersonLegacyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReassignFacesWithBody request with any body
 	ReassignFacesWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -10868,6 +10880,30 @@ func (c *Client) UpdatePeople(ctx context.Context, body UpdatePeopleJSONRequestB
 	return c.Client.Do(req)
 }
 
+func (c *Client) MergePeopleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePeopleRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MergePeople(ctx context.Context, body MergePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePeopleRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeletePerson(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeletePersonRequest(c.Server, id)
 	if err != nil {
@@ -10916,8 +10952,8 @@ func (c *Client) UpdatePerson(ctx context.Context, id openapi_types.UUID, body U
 	return c.Client.Do(req)
 }
 
-func (c *Client) MergePersonWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewMergePersonRequestWithBody(c.Server, id, contentType, body)
+func (c *Client) MergePersonLegacyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePersonLegacyRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10928,8 +10964,8 @@ func (c *Client) MergePersonWithBody(ctx context.Context, id openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-func (c *Client) MergePerson(ctx context.Context, id openapi_types.UUID, body MergePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewMergePersonRequest(c.Server, id, body)
+func (c *Client) MergePersonLegacy(ctx context.Context, id openapi_types.UUID, body MergePersonLegacyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePersonLegacyRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -20231,6 +20267,46 @@ func NewUpdatePeopleRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
+// NewMergePeopleRequest calls the generic MergePeople builder with application/json body
+func NewMergePeopleRequest(server string, body MergePeopleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMergePeopleRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewMergePeopleRequestWithBody generates requests for MergePeople with any type of body
+func NewMergePeopleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/people/merge")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeletePersonRequest generates requests for DeletePerson
 func NewDeletePersonRequest(server string, id openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -20346,19 +20422,19 @@ func NewUpdatePersonRequestWithBody(server string, id openapi_types.UUID, conten
 	return req, nil
 }
 
-// NewMergePersonRequest calls the generic MergePerson builder with application/json body
-func NewMergePersonRequest(server string, id openapi_types.UUID, body MergePersonJSONRequestBody) (*http.Request, error) {
+// NewMergePersonLegacyRequest calls the generic MergePersonLegacy builder with application/json body
+func NewMergePersonLegacyRequest(server string, id openapi_types.UUID, body MergePersonLegacyJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewMergePersonRequestWithBody(server, id, "application/json", bodyReader)
+	return NewMergePersonLegacyRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewMergePersonRequestWithBody generates requests for MergePerson with any type of body
-func NewMergePersonRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewMergePersonLegacyRequestWithBody generates requests for MergePersonLegacy with any type of body
+func NewMergePersonLegacyRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -26620,6 +26696,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdatePeopleWithResponse(ctx context.Context, body UpdatePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePeopleResponse, error)
 
+	// MergePeopleWithBodyWithResponse request with any body
+	MergePeopleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePeopleResponse, error)
+
+	MergePeopleWithResponse(ctx context.Context, body MergePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePeopleResponse, error)
+
 	// DeletePersonWithResponse request
 	DeletePersonWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePersonResponse, error)
 
@@ -26631,10 +26712,10 @@ type ClientWithResponsesInterface interface {
 
 	UpdatePersonWithResponse(ctx context.Context, id openapi_types.UUID, body UpdatePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePersonResponse, error)
 
-	// MergePersonWithBodyWithResponse request with any body
-	MergePersonWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePersonResponse, error)
+	// MergePersonLegacyWithBodyWithResponse request with any body
+	MergePersonLegacyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePersonLegacyResponse, error)
 
-	MergePersonWithResponse(ctx context.Context, id openapi_types.UUID, body MergePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePersonResponse, error)
+	MergePersonLegacyWithResponse(ctx context.Context, id openapi_types.UUID, body MergePersonLegacyJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePersonLegacyResponse, error)
 
 	// ReassignFacesWithBodyWithResponse request with any body
 	ReassignFacesWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReassignFacesResponse, error)
@@ -30489,6 +30570,28 @@ func (r UpdatePeopleResponse) StatusCode() int {
 	return 0
 }
 
+type MergePeopleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]BulkIdResponseDto
+}
+
+// Status returns HTTPResponse.Status
+func (r MergePeopleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MergePeopleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type DeletePersonResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30554,14 +30657,14 @@ func (r UpdatePersonResponse) StatusCode() int {
 	return 0
 }
 
-type MergePersonResponse struct {
+type MergePersonLegacyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *[]BulkIdResponseDto
 }
 
 // Status returns HTTPResponse.Status
-func (r MergePersonResponse) Status() string {
+func (r MergePersonLegacyResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30569,7 +30672,7 @@ func (r MergePersonResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r MergePersonResponse) StatusCode() int {
+func (r MergePersonLegacyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -34987,6 +35090,23 @@ func (c *ClientWithResponses) UpdatePeopleWithResponse(ctx context.Context, body
 	return ParseUpdatePeopleResponse(rsp)
 }
 
+// MergePeopleWithBodyWithResponse request with arbitrary body returning *MergePeopleResponse
+func (c *ClientWithResponses) MergePeopleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePeopleResponse, error) {
+	rsp, err := c.MergePeopleWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMergePeopleResponse(rsp)
+}
+
+func (c *ClientWithResponses) MergePeopleWithResponse(ctx context.Context, body MergePeopleJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePeopleResponse, error) {
+	rsp, err := c.MergePeople(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMergePeopleResponse(rsp)
+}
+
 // DeletePersonWithResponse request returning *DeletePersonResponse
 func (c *ClientWithResponses) DeletePersonWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePersonResponse, error) {
 	rsp, err := c.DeletePerson(ctx, id, reqEditors...)
@@ -35022,21 +35142,21 @@ func (c *ClientWithResponses) UpdatePersonWithResponse(ctx context.Context, id o
 	return ParseUpdatePersonResponse(rsp)
 }
 
-// MergePersonWithBodyWithResponse request with arbitrary body returning *MergePersonResponse
-func (c *ClientWithResponses) MergePersonWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePersonResponse, error) {
-	rsp, err := c.MergePersonWithBody(ctx, id, contentType, body, reqEditors...)
+// MergePersonLegacyWithBodyWithResponse request with arbitrary body returning *MergePersonLegacyResponse
+func (c *ClientWithResponses) MergePersonLegacyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePersonLegacyResponse, error) {
+	rsp, err := c.MergePersonLegacyWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseMergePersonResponse(rsp)
+	return ParseMergePersonLegacyResponse(rsp)
 }
 
-func (c *ClientWithResponses) MergePersonWithResponse(ctx context.Context, id openapi_types.UUID, body MergePersonJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePersonResponse, error) {
-	rsp, err := c.MergePerson(ctx, id, body, reqEditors...)
+func (c *ClientWithResponses) MergePersonLegacyWithResponse(ctx context.Context, id openapi_types.UUID, body MergePersonLegacyJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePersonLegacyResponse, error) {
+	rsp, err := c.MergePersonLegacy(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseMergePersonResponse(rsp)
+	return ParseMergePersonLegacyResponse(rsp)
 }
 
 // ReassignFacesWithBodyWithResponse request with arbitrary body returning *ReassignFacesResponse
@@ -39926,6 +40046,32 @@ func ParseUpdatePeopleResponse(rsp *http.Response) (*UpdatePeopleResponse, error
 	return response, nil
 }
 
+// ParseMergePeopleResponse parses an HTTP response from a MergePeopleWithResponse call
+func ParseMergePeopleResponse(rsp *http.Response) (*MergePeopleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MergePeopleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []BulkIdResponseDto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeletePersonResponse parses an HTTP response from a DeletePersonWithResponse call
 func ParseDeletePersonResponse(rsp *http.Response) (*DeletePersonResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -39994,15 +40140,15 @@ func ParseUpdatePersonResponse(rsp *http.Response) (*UpdatePersonResponse, error
 	return response, nil
 }
 
-// ParseMergePersonResponse parses an HTTP response from a MergePersonWithResponse call
-func ParseMergePersonResponse(rsp *http.Response) (*MergePersonResponse, error) {
+// ParseMergePersonLegacyResponse parses an HTTP response from a MergePersonLegacyWithResponse call
+func ParseMergePersonLegacyResponse(rsp *http.Response) (*MergePersonLegacyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &MergePersonResponse{
+	response := &MergePersonLegacyResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

@@ -1,25 +1,29 @@
 package routes
 
 import (
+	"embed"
 	"net/http"
 
 	"charm.land/log/v2"
 	"github.com/damongolding/immich-kiosk/internal/common"
 	"github.com/damongolding/immich-kiosk/internal/config"
 	"github.com/damongolding/immich-kiosk/internal/templates/views"
+	"github.com/damongolding/immich-kiosk/internal/utils"
 	"github.com/labstack/echo/v5"
 )
 
-func About(baseConfig *config.Config) echo.HandlerFunc {
+func Recovering(baseConfig *config.Config, public *embed.FS) echo.HandlerFunc {
 	return func(c *echo.Context) error {
+		if c.Request().Header.Get("X-Kiosk-Internal") != "1" {
+			return echo.ErrBadRequest
+		}
+
 		requestData, err := InitializeRequestData(c, baseConfig)
 		if err != nil {
 			return err
 		}
-
 		if requestData == nil {
-			log.Info("Refreshing clients")
-			return nil
+			return echo.ErrBadRequest
 		}
 
 		requestConfig := requestData.RequestConfig
@@ -33,13 +37,26 @@ func About(baseConfig *config.Config) echo.HandlerFunc {
 			"requestConfig", requestConfig.String(),
 		)
 
+		var customCSS []byte
+
+		customCSS, err = utils.LoadCustomCSS()
+		if err != nil {
+			log.Error("loading custom css", "err", err)
+		}
+
 		viewData := common.ViewData{
 			KioskVersion: KioskVersion,
 			RequestID:    requestID,
 			DeviceID:     deviceID,
+			CustomCSS:    customCSS,
 			Config:       requestConfig,
 		}
 
-		return Render(c, http.StatusOK, views.About(viewData))
+		css, err := public.ReadFile("frontend/public/assets/css/kiosk.css")
+		if err != nil {
+			return err
+		}
+
+		return Render(c, http.StatusOK, views.Recovering(viewData.SystemLang, KioskVersion, css, viewData.CustomCSS, requestConfig.CustomCSS))
 	}
 }

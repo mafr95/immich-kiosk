@@ -1,0 +1,129 @@
+// Immich Kiosk service worker.
+//
+// Its job is to keep the installed PWA usable when the Kiosk server is
+// unreachable *or* reachable but not responding.
+
+var CACHE = "immich-kiosk-{{ .Version }}";
+var OFFLINE_URL = "/recover";
+
+// How long to wait for a navigation response before giving up and showing the
+// offline page. "server stopped responding" is a hang, not a refused
+// connection, so fetch() would otherwise sit here until iOS' own (much longer)
+// network timeout fires and paints its native error page.
+var NAV_TIMEOUT_MS = 5000;
+
+// Last-resort offline page, embedded so a navigation is *always* answered with a
+// real document. This is injected at runtime.
+var FALLBACK_HTML = `{{ .FallbackHtml }}`;
+
+function internalRecoverRequest() {
+	return new Request(OFFLINE_URL, {
+		headers: { "X-Kiosk-Internal": "1" },
+	});
+}
+
+// Resolve to the cached offline page, or the embedded fallback if it is not
+// there. Never rejects.
+function offlinePage() {
+    return caches
+        .match(OFFLINE_URL, { ignoreSearch: true })
+        .then(function (cached) {
+            return cached || fallbackResponse();
+        })
+        .catch(fallbackResponse);
+}
+
+function fallbackResponse() {
+    return new Response(FALLBACK_HTML, {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+}
+
+self.addEventListener("install", function (event) {
+    event.waitUntil(
+        caches
+            .open(CACHE)
+            .then(function (cache) {
+                return cache.add(internalRecoverRequest());
+            })
+            .catch(function () {
+                // Server was down while the worker installed. The embedded
+                // FALLBACK_HTML keeps navigations covered until the next
+                // successful load refreshes the cache.
+            }),
+    );
+    self.skipWaiting();
+});
+
+self.addEventListener("activate", function (event) {
+    event.waitUntil(
+        caches
+            .keys()
+            .then(function (keys) {
+                return Promise.all(
+                    keys
+                        .filter(function (key) {
+                            return key !== CACHE;
+                        })
+                        .map(function (key) {
+                            return caches.delete(key);
+                        }),
+                );
+            })
+            .then(function () {
+                return self.clients.claim();
+            }),
+    );
+});
+
+self.addEventListener("fetch", function (event) {
+    var request = event.request;
+
+    // Only step in for top-level navigations. Everything else (assets, XHR,
+    // the offline page's own /health polling) goes straight to the network.
+    if (request.mode !== "navigate") {
+        return;
+    }
+
+    event.respondWith(
+        new Promise(function (resolve) {
+            var done = false;
+
+            function settle(value) {
+                if (done) {
+                    return;
+                }
+                done = true;
+                resolve(value);
+            }
+
+            var timer = setTimeout(function () {
+                offlinePage().then(settle);
+            }, NAV_TIMEOUT_MS);
+
+            fetch(request).then(
+                function (response) {
+                    clearTimeout(timer);
+                    // Treat any server-side error as "not ready yet" and show
+                    // the self-retrying offline page. 4xx (auth prompts, bad
+                    // paths) is passed through so the user still sees it.
+                    if (response.status >= 500) {
+                        offlinePage().then(settle);
+                        return;
+                    }
+                    // Refresh the cached offline page opportunistically so a
+                    // later cold launch has an up-to-date copy to fall back on.
+                    // (offline.html itself, not this navigation response.)
+                    caches.open(CACHE).then(function (cache) {
+                        cache.add(internalRecoverRequest()).catch(function () {});
+                    });
+                    settle(response);
+                },
+                function () {
+                    clearTimeout(timer);
+                    offlinePage().then(settle);
+                },
+            );
+        }),
+    );
+});

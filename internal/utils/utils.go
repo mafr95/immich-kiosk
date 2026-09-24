@@ -1094,3 +1094,18 @@ func ContainsWholeWord(a, b string) bool {
 func RunningInContainer() bool {
 	return runningInContainer == "true"
 }
+
+func TruncateAfter(s string, cutAt string) string {
+	before, _, ok := strings.Cut(s, cutAt)
+	if !ok {
+		return s
+	}
+	return before + "..."
+}
+
+func LoadCustomCSS() ([]byte, error) {
+	if !FileExists("./custom.css") {
+		return nil, nil
+	}
+	return os.ReadFile("./custom.css")
+}
