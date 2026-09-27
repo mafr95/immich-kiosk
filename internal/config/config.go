@@ -735,6 +735,12 @@ func (c *Config) Load() error {
 	c.checkUsersAPIKeys()
 	c.checkLowercaseTaggedFields()
 	c.checkAssetBuckets()
+	c.checkIDs("blacklist", c.Blacklist, false, false)
+	c.checkIDs("people", c.People, true, true)
+	c.checkIDs("excluded_people", c.ExcludedPeople, false, true)
+	c.checkIDs("albums", c.Albums, true, true)
+	c.checkIDs("excluded_albums", c.ExcludedAlbums, false, false)
+	c.checkIDs("excluded_partners", c.ExcludedPartners, false, false)
 	c.checkAlbumOrder()
 	c.checkExcludedAlbums()
 	c.checkTags()
@@ -848,13 +854,15 @@ func (c *Config) String() string {
 	return string(out)
 }
 
-func (c *Config) SanitizedYaml() string {
+func (c *Config) SanitizedYaml(immichVersion string) string {
 	red := RedactedCopy(*c) // deep redacted clone
 	out, err := yaml.Marshal(red)
 	if err != nil {
 		log.Error("yaml marshal", "err", err)
 		return ""
 	}
+
+	out = append(out, []byte("immich_version: "+immichVersion+"\n")...)
 	return string(out)
 }
 

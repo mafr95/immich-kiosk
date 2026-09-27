@@ -115,26 +115,30 @@ func albumRedirects(ctx context.Context, c config.Config) []config.RedirectItem 
 
 templ Redirects(c config.Config, redirects config.Redirects, queries url.Values) {
 	{{
-	hasPassword, password, paramType := checkAuthParam(queries)
-	groupedRedirects := groupRedirects(redirects.Items)
+		hasPassword, password, paramType := checkAuthParam(queries)
+		groupedRedirects := groupRedirects(redirects.Items)
 	}}
 	<div id="redirects-container">
 		<div class="redirects">
 			<div class="redirects--shadow">
+				{{ tabIndex := 0 }}
 				for _, group := range groupedRedirects {
 					if group.Category == "" {
-						@RedirectList(group.Redirects, hasPassword, password, paramType)
+						<div tabindex={ tabIndex }>
+							@RedirectList(group.Redirects, hasPassword, password, paramType)
+						</div>
 					} else {
-						<div class="redirect-category">
+						<div class="redirect-category" tabindex={ tabIndex }>
 							<h3 class="category-title">{ group.Category }</h3>
 							@RedirectList(group.Redirects, hasPassword, password, paramType)
 						</div>
 					}
+					{{ tabIndex++ }}
 				}
 				if redirects.ShowAlbums {
 					<div
 						class="redirect-category"
-						hx-get={ fmt.Sprintf("/redirects/albums?%s", queries.Encode()) }
+						hx-get={ fmt.Sprintf("/redirects/albums?%s&tabindex=%d", queries.Encode(), tabIndex+1) }
 						hx-trigger="load"
 						hx-swap="outerHTML"
 					></div>
@@ -144,12 +148,12 @@ templ Redirects(c config.Config, redirects config.Redirects, queries url.Values)
 	</div>
 }
 
-templ AlbumRedirectsFragment(c config.Config, queries url.Values, ctx context.Context) {
+templ AlbumRedirectsFragment(c config.Config, queries url.Values, ctx context.Context, tabIndex int) {
 	{{
-	hasPassword, password, paramType := checkAuthParam(queries)
-	albumRedirects := albumRedirects(ctx, c)
+		hasPassword, password, paramType := checkAuthParam(queries)
+		albumRedirects := albumRedirects(ctx, c)
 	}}
-	<div class="redirect-category">
+	<div class="redirect-category" tabindex={ tabIndex }>
 		<h3 class="category-title">Albums</h3>
 		@AlbumRedirectList(albumRedirects, hasPassword, password, paramType)
 	</div>
