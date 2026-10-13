@@ -1,5 +1,6 @@
 import { formatRFC3339 } from "date-fns/formatRFC3339";
 import htmx from "htmx.org";
+import "htmx-ext-sse";
 import type { TimeFormat } from "./clock";
 import { initClock } from "./clock";
 import {
@@ -183,10 +184,6 @@ async function init(): Promise<void> {
         );
     }
 
-    if (kioskData.disableScreensaver) {
-        await preventSleep();
-    }
-
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker
             .register("/assets/js/sw.js", { scope: "/" })
@@ -239,8 +236,13 @@ async function init(): Promise<void> {
     if (kioskData.livePhotos) livePhoto(kioskData.livePhotoLoopDelay);
 
     // Burn-in prevention
-    if (kioskData.burnInInterval > 0 && kioskData.burnInDuration > 0)
+    if (kioskData.burnInInterval > 0 && kioskData.burnInDuration > 0) {
         burnInCycle();
+    }
+
+    if (kioskData.disableScreensaver) {
+        preventSleep();
+    }
 }
 
 function burnInCycle() {
